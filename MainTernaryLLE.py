@@ -45,13 +45,35 @@ class Mixture:
 
         XRange = arange(0.01, 1.00, 0.01)
         GibbsSurface = array([ModelInstance.deltaGmix(array([x1, x2]), c) for x1 in XRange for x2 in XRange])
+        GradientProjection = array([ModelInstance.FirstDerivatives(array([x1, x2]), c) for x1 in XRange for x2 in XRange])
         PlotGmix = transpose(reshape(GibbsSurface, (size(XRange), -1)))
+        PlotGradient = transpose(reshape(GradientProjection, (size(XRange), -1)))
         x_1, x_2 = meshgrid(XRange, XRange)
         
         matplotlib.rc('text', usetex = True)
         fig = matplotlib.pyplot.figure()
         ax = Axes3D(fig)
-        ax.plot_wireframe(x_1, x_2, PlotGmix, rstride=1, cstride=1) 
+
+        Gx, Gy = np.gradient(PlotGmix) # gradientS with respect to x and y
+        G = (Gx**2+Gy**2)**.5  # gradient magnitude
+        N = G/G.max()  # normalie 0..1
+        #for x2 in range(len(XRange)):
+        #    for x1 in range(len(XRange)):
+        #        if ModelInstance.FirstDerivatives(array([x1, x2]), c)==1:
+        #            SurfaceColours[x1, x2] = 1
+        #        else:
+        #            SurfaceColours[x1, x2] = 0
+        
+        ax.plot_surface(x_1, x_2, PlotGmix, rstride=1, cstride=1, cmap = matplotlib.cm.jet, linewidth = 1.0, antialiased =False)        
+        
+        Tieline1x = [Actual[0, 0], Actual[0, 2]]
+        Tieline1y = [Actual[0, 1], Actual[0, 3]]
+        Tieline2x = [Actual[1, 0], Actual[1, 2]]
+        Tieline2y = [Actual[1, 1], Actual[1, 3]]
+
+        ax.plot(Tieline1x, Tieline1y, zs = -1, zdir ='z', linewidth = 1.5, color = 'k')
+        ax.plot(Tieline2x, Tieline2y, zs = -1, zdir ='z', linewidth = 1.5, color = 'k')
+        
         matplotlib.pyplot.xlabel(r'Mole Fraction of '+self.Compounds[0].capitalize(), fontsize = 14)
         matplotlib.pyplot.ylabel(r'Mole Fraction of '+self.Compounds[1].capitalize(), fontsize = 14)
         #matplotlib.pyplot.zlabel(r'$\displaystyle\frac{\Delta G_{mix}}{RT}$', fontsize = 14)
