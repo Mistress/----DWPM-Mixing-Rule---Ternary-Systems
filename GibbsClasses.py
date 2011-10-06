@@ -70,6 +70,7 @@ class DWPM(Model):
         x1, x2 = x[0:2]
         
         if x1 + x2 > 1:
+        
             return NaN
         
         else:
@@ -83,17 +84,20 @@ class DWPM(Model):
 
             Hessian = empty((2, 2), float)
 
-            Hessian[0, 0] = 2*(Lambda_31**s_3-1)/(s_3*(Lambda_32**s_3*x2-x2+Lambda_31**s_3*x1- x1+1))+(Lambda_31**s_3-1)**2*(-x2-x1+1)/(s_3*(Lambda_32**s_3*x2-x2+Lambda_31**s_3*x1-x1+1)**2)-2*(1-Lambda_13**s_1)/(s_1*(Lambda_12**s_1*x2+Lambda_13**s_1*(-x2-x1+1)+x1))+(1-Lambda_13**s_1)**2*x1/(s_1*(Lambda_12**s_1*x2+Lambda_13**s_1*(-x2-x1+1)+x1)**2)+(Lambda_21**s_2-Lambda_23**s_2)**2*x2/(s_2*(x2+Lambda_23**s_2*(-x2-x1+1)+Lambda_21**s_2*x1)**2)+1/(-x2-x1+1)+1/x1
+            Hessian[0, 0] = 2*(Lambda_31**self.s_3-1)/(self.s_3*(Lambda_32**self.s_3*x2-x2+Lambda_31**self.s_3*x1-x1+1))+(Lambda_31**self.s_3-1)**2*(-x2-x1+1)/(self.s_3*(Lambda_32**self.s_3*x2-x2+Lambda_31**self.s_3*x1-x1+1)**2)-2*(1-Lambda_13**self.s_1)/(self.s_1*(Lambda_12**self.s_1*x2+Lambda_13**self.s_1*(-x2-x1+1)+x1))+(1-Lambda_13**self.s_1)**2*x1/(self.s_1*(Lambda_12**self.s_1*x2+Lambda_13**self.s_1*(-x2-x1+1)+x1)**2)+(Lambda_21**self.s_2-Lambda_23**self.s_2)**2*x2/(self.s_2*(x2+Lambda_23**self.s_2*(-x2-x1+1)+Lambda_21**self.s_2*x1)**2)+1/(-x2-x1+1)+1/x1
 
-            Hessian[0, 1] = (Lambda_32**s_3-1)/(s_3*(Lambda_32**s_3*x2-x2+Lambda_31**s_3*x1-x1+1))+(Lambda_31**s_3-1)/(s_3*(Lambda_32**s_3*x2-x2+Lambda_31**s_3*x1-x1+1))+(Lambda_31**s_3-1)*(Lambda_32**s_3-1)*(-x2-x1+1)/(s_3*(Lambda_32**s_3*x2-x2+Lambda_31**s_3*x1-x1+1)**2)-(Lambda_12**s_1-Lambda_13**s_1)/(s_1*(Lambda_12**s_1*x2+Lambda_13**s_1*(-x2-x1+1)+x1))+(1-Lambda_13**s_1)*(Lambda_12**s_1-Lambda_13**s_1)*x1/(s_1*(Lambda_12**s_1*x2+Lambda_13**s_1*(-x2-x1+1)+x1)**2)-(Lambda_21**s_2-Lambda_23**s_2)/(s_2*(x2+Lambda_23**s_2*(-x2-x1+1)+Lambda_21**s_2*x1))+(1-Lambda_23**s_2)*(Lambda_21**s_2-Lambda_23**s_2)*x2/(s_2*(x2+Lambda_23**s_2*(-x2-x1+1)+Lambda_21**s_2*x1)**2)+1/(-x2-x1+1)
+            Hessian[0, 1] = (Lambda_32**self.s_3-1)/(self.s_3*(Lambda_32**self.s_3*x2-x2+Lambda_31**self.s_3*x1-x1+1))+(Lambda_31**self.s_3-1)/(self.s_3*(Lambda_32**self.s_3*x2-x2+Lambda_31**self.s_3*x1-x1+1))+(Lambda_31**self.s_3-1)*(Lambda_32**self.s_3-1)*(-x2-x1+1)/(self.s_3*(Lambda_32**self.s_3*x2-x2+Lambda_31**self.s_3*x1-x1+1)**2)-(Lambda_12**self.s_1-Lambda_13**self.s_1)/(self.s_1*(Lambda_12**self.s_1*x2+Lambda_13**self.s_1*(-x2-x1+1)+x1))+(1-Lambda_13**self.s_1)*(Lambda_12**self.s_1-Lambda_13**self.s_1)*x1/(self.s_1*(Lambda_12**self.s_1*x2+Lambda_13**self.s_1*(-x2-x1+1)+x1)**2)-(Lambda_21**self.s_2-Lambda_23**self.s_2)/(self.s_2*(x2+Lambda_23**self.s_2*(-x2-x1+1)+Lambda_21**self.s_2*x1))+(1-Lambda_23**self.s_2)*(Lambda_21**self.s_2-Lambda_23**self.s_2)*x2/(self.s_2*(x2+Lambda_23**self.s_2*(-x2-x1+1)+Lambda_21**self.s_2*x1)**2)+1/(-x2-x1+1)
 
-            Hessian[1, 0] = (Lambda_32**s_3-1)/(s_3*(Lambda_32**s_3*x2-x2+Lambda_31**s_3*x1-x1+1))+(Lambda_31**s_3-1)/(s_3*(Lambda_32**s_3*x2-x2+Lambda_31**s_3*x1-x1+1))+(Lambda_31**s_3-1)*(Lambda_32**s_3-1)*(-x2-x1+1)/(s_3*(Lambda_32**s_3*x2-x2+Lambda_31**s_3*x1-x1+1)**2)-(Lambda_12**s_1-Lambda_13**s_1)/(s_1*(Lambda_12**s_1*x2+Lambda_13**s_1*(-x2-x1+1)+x1))+(1-Lambda_13**s_1)*(Lambda_12**s_1-Lambda_13**s_1)*x1/(s_1*(Lambda_12**s_1*x2+Lambda_13**s_1*(-x2-x1+1)+x1)**2)-(Lambda_21**s_2-Lambda_23**s_2)/(s_2*(x2+Lambda_23**s_2*(-x2-x1+1)+Lambda_21**s_2*x1))+(1-Lambda_23**s_2)*(Lambda_21**s_2-Lambda_23**s_2)*x2/(s_2*(x2+Lambda_23**s_2*(-x2-x1+1)+Lambda_21**s_2*x1)**2)+1/(-x2-x1+1)
+            Hessian[1, 0] = (Lambda_32**self.s_3-1)/(self.s_3*(Lambda_32**self.s_3*x2-x2+Lambda_31**self.s_3*x1-x1+1))+(Lambda_31**self.s_3-1)/(self.s_3*(Lambda_32**self.s_3*x2-x2+Lambda_31**self.s_3*x1-x1+1))+(Lambda_31**self.s_3-1)*(Lambda_32**self.s_3-1)*(-x2-x1+1)/(self.s_3*(Lambda_32**self.s_3*x2-x2+Lambda_31**self.s_3*x1-x1+1)**2)-(Lambda_12**self.s_1-Lambda_13**self.s_1)/(self.s_1*(Lambda_12**self.s_1*x2+Lambda_13**self.s_1*(-x2-x1+1)+x1))+(1-Lambda_13**self.s_1)*(Lambda_12**self.s_1-Lambda_13**self.s_1)*x1/(self.s_1*(Lambda_12**self.s_1*x2+Lambda_13**self.s_1*(-x2-x1+1)+x1)**2)-(Lambda_21**self.s_2-Lambda_23**self.s_2)/(self.s_2*(x2+Lambda_23**self.s_2*(-x2-x1+1)+Lambda_21**self.s_2*x1))+(1-Lambda_23**self.s_2)*(Lambda_21**self.s_2-Lambda_23**self.s_2)*x2/(self.s_2*(x2+Lambda_23**self.s_2*(-x2-x1+1)+Lambda_21**self.s_2*x1)**2)+1/(-x2-x1+1)
 
-            Hessian[1, 1] = 2*(Lambda_32**s_3-1)/(s_3*(Lambda_32**s_3*x2-x2+Lambda_31**s_3*x1-x1+1))+(Lambda_32**s_3-1)**2*(-x2-x1+1)/(s_3*(Lambda_32**s_3*x2-x2+Lambda_31**s_3*x1-x1+1)**2)+(Lambda_12**s_1-Lambda_13**s_1)**2*x1/(s_1*(Lambda_12**s_1*x2+Lambda_13**s_1*(-x2-x1+1)+x1)**2)-2*(1-Lambda_23**s_2)/(s_2*(x2+Lambda_23**s_2*(-x2-x1+1)+Lambda_21**s_2*x1))+(1-Lambda_23**s_2)**2*x2/(s_2*(x2+Lambda_23**s_2*(-x2-x1+1)+Lambda_21**s_2*x1)**2)+1/x2+1/(-x2-x1+1)
+            Hessian[1, 1] = 2*(Lambda_32**self.s_3-1)/(self.s_3*(Lambda_32**self.s_3*x2-x2+Lambda_31**self.s_3*x1-x1+1))+(Lambda_32**self.s_3-1)**2*(-x2-x1+1)/(self.s_3*(Lambda_32**self.s_3*x2 -x2+Lambda_31**self.s_3*x1-x1+1)**2)+(Lambda_12**self.s_1-Lambda_13**self.s_1)**2*x1/(self.s_1*(Lambda_12**self.s_1*x2+Lambda_13**self.s_1*(-x2-x1+1)+x1)**2)-2*(1-Lambda_23**self.s_2)/(self.s_2*(x2+Lambda_23**self.s_2*(-x2-x1+1)+Lambda_21**self.s_2*x1))+(1-Lambda_23**self.s_2)**2*x2/(self.s_2*(x2+Lambda_23**self.s_2*(-x2-x1+1)+Lambda_21**self.s_2*x1)**2)+1/x2+1/(-x2-x1+1)
 
-            HessEigens = eig(Hessian, left=False, right=False)
-
-            if all(HessEigens>0):
-                return 1
+            if not(any(isinf(Hessian)) or any(isnan(Hessian))):
+                HessEigens = eig(Hessian, left=False, right=False)
             else:
-                return 0 
+                HessEigens = -1*ones(4)
+
+            if  all(HessEigens>0):
+                return True
+            else:
+                return False 

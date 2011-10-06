@@ -43,41 +43,50 @@ class Mixture:
                     
     def Plotter(self, DWPMParams, Plane1, Plane2, Cell_s, Model, ModelInstance, Actual, c, T, Converged):
 
+        print "Plotter"
+
         XRange = arange(0.01, 1.00, 0.01)
         GibbsSurface = array([ModelInstance.deltaGmix(array([x1, x2]), c) for x1 in XRange for x2 in XRange])
-        GradientProjection = array([ModelInstance.FirstDerivatives(array([x1, x2]), c) for x1 in XRange for x2 in XRange])
         PlotGmix = transpose(reshape(GibbsSurface, (size(XRange), -1)))
-        PlotGradient = transpose(reshape(GradientProjection, (size(XRange), -1)))
         x_1, x_2 = meshgrid(XRange, XRange)
         
         matplotlib.rc('text', usetex = True)
         fig = matplotlib.pyplot.figure()
-        ax = Axes3D(fig)
+        fig.suptitle(r'Predicted'+r'$\displaystyle\frac{\Delta G_{mix}}{RT}$'+'Surface', fontsize=14) 
+        ax1 = fig.add_subplot(121, projection= '3d')
+        ax2 = fig.add_subplot(122 , projection= '3d')
 
-        Gx, Gy = np.gradient(PlotGmix) # gradientS with respect to x and y
-        G = (Gx**2+Gy**2)**.5  # gradient magnitude
-        N = G/G.max()  # normalie 0..1
-        #for x2 in range(len(XRange)):
-        #    for x1 in range(len(XRange)):
-        #        if ModelInstance.FirstDerivatives(array([x1, x2]), c)==1:
-        #            SurfaceColours[x1, x2] = 1
-        #        else:
-        #            SurfaceColours[x1, x2] = 0
+        SurfaceColours = empty(x_1.shape, dtype =str)
+        for x2 in range(len(XRange)):
+            for x1 in range(len(XRange)):
+                if ModelInstance.Hessian(array([XRange[x1], XRange[x2]]), c):
+                    SurfaceColours[x1, x2] = 'w'
+                else:
+                    SurfaceColours[x1, x2] = 'r'
+        SurfaceColours = transpose(reshape(SurfaceColours, (size(XRange), -1)))
         
-        ax.plot_surface(x_1, x_2, PlotGmix, rstride=1, cstride=1, cmap = matplotlib.cm.jet, linewidth = 1.0, antialiased =False)        
+        ax1.plot_surface(x_1, x_2, PlotGmix, rstride=1, cstride=1, facecolors=SurfaceColours, linewidth = 0.0, antialiased =False)        
         
-        Tieline1x = [Actual[0, 0], Actual[0, 2]]
-        Tieline1y = [Actual[0, 1], Actual[0, 3]]
-        Tieline2x = [Actual[1, 0], Actual[1, 2]]
-        Tieline2y = [Actual[1, 1], Actual[1, 3]]
+        ax2.plot_wireframe(x_1, x_2, PlotGmix, rstride=1, cstride=1, linewidth = 0.25, antialiased =False)        
+        
+        
+        Tielines1x1 = [Actual[0, 0], Actual[0, 2]]
+        Tielines2x1 = [Actual[1, 0], Actual[1, 2]]
+        Tielines1x2 = [Actual[0, 1], Actual[0, 3]]
+        Tielines2x2 = [Actual[1, 1], Actual[1, 3]]
+        GibbsTielines1 = array([ModelInstance.deltaGmix(array([Tielines1x1[i], Tielines1x2[i]]), c) for i in range(len(Tielines1x1))])
+        GibbsTielines2 = array([ModelInstance.deltaGmix(array([Tielines2x1[i], Tielines2x2[i]]), c) for i in range(len(Tielines2x1))])
 
-        ax.plot(Tieline1x, Tieline1y, zs = -1, zdir ='z', linewidth = 1.5, color = 'k')
-        ax.plot(Tieline2x, Tieline2y, zs = -1, zdir ='z', linewidth = 1.5, color = 'k')
+        ax2.plot(Tielines1x1, Tielines1x2, GibbsTielines1, linewidth = 1.5, color = 'k')
+        ax2.plot(Tielines2x1, Tielines2x2, GibbsTielines2, linewidth = 1.5, color = 'k')
+        ax1.plot(Tielines1x1, Tielines1x2, GibbsTielines1, linewidth = 1.5, color = 'k')
+        ax1.plot(Tielines2x1, Tielines2x2, GibbsTielines2, linewidth = 1.5, color = 'k')
         
-        matplotlib.pyplot.xlabel(r'Mole Fraction of '+self.Compounds[0].capitalize(), fontsize = 14)
-        matplotlib.pyplot.ylabel(r'Mole Fraction of '+self.Compounds[1].capitalize(), fontsize = 14)
-        #matplotlib.pyplot.zlabel(r'$\displaystyle\frac{\Delta G_{mix}}{RT}$', fontsize = 14)
-        matplotlib.pyplot.title(r"Predicted Gibbs Surface ", fontsize=14) 
+        ax1.set_xlabel(r'Mole Fraction '+self.Compounds[0].capitalize(), fontsize = 14)
+        ax1.set_ylabel(r'Mole Fraction '+self.Compounds[1].capitalize(), fontsize = 14)
+        ax2.set_xlabel(r'Mole Fraction '+self.Compounds[0].capitalize(), fontsize = 14)
+        ax2.set_ylabel(r'Mole Fraction '+self.Compounds[1].capitalize(), fontsize = 14)
+        #matplotlib.pyplot.zlabel(, fontsize = 14)
         fig.savefig('Results/'+self.Name+'/'+Model+'/PredictedGibbsWireframe.png')
 
         #matplotlib.pyplot.xlabel(r'Mole Fraction of '+self.Compounds[0].capitalize(), fontsize = 14)
@@ -133,9 +142,7 @@ class Mixture:
             h5file = tables.openFile(MixtureDataDir+'/'+ self.Name +'.h5', 'r')
             exec('ActualPhase1 = h5file.root.ExperimentalData.TielineData.T' + str(int(where(self.M['Temperatures']==T)[0]) +1) +'.Phase1.read()')
             exec('ActualPhase2 = h5file.root.ExperimentalData.TielineData.T' + str(int(where(self.M['Temperatures']==T)[0]) +1) +'.Phase2.read()')
-
-                #random_integers(size(self.M['Temperatures'])
-
+                
             Tieline1 = 0
             Tieline2 = size(ActualPhase1[:,0])-1
 
@@ -160,7 +167,6 @@ class Mixture:
             while (Converge!=1 and NStarts<MaxNStarts):
                                                            
                 [Paramj, infodict, Converge, Mesg] = scipy.optimize.fsolve(System.SystemEquations, InitParamj, (c, Actual, R, T), System.SystemEquationsJac, 1, 0, TolParam, MaxFEval, None, 0.0, 100, None)
-                print Mesg
                 NFCalls = infodict['nfev']
                 NJCalls = infodict['njev']
                 NStarts = NStarts + 1
@@ -171,8 +177,8 @@ class Mixture:
                 InitParams = (InitParamsLimit[1]-InitParamsLimit[0])*random(6) + reshape(array([InitParamsLimit[0], InitParamsLimit[0], InitParamsLimit[0], InitParamsLimit[0], InitParamsLimit[0], InitParamsLimit[0]]), -1)
                 InitParamj = append(InitParams, array([-2, -2., 0., -2, -2., 0.])+ (4., 4., -1., 4., 4., -1.)*random(6))
                                                                                                         
-            # print Mesg
-            ##print NStarts
+            #print Mesg
+            #print NStarts
             
             DWPMParams = Paramj[0:6]
             Plane1 = Paramj[6:9]
