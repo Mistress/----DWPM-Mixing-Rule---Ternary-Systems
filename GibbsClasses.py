@@ -14,9 +14,9 @@ class DWPM(Model):
         self.c12 = Params[0]
         self.c21 = Params[1]
         self.c13 = Params[2]
-        self.c31 = Params[3]        
+        self.c31 = Params[3]
         self.c23 = Params[4]
-        self.c32 = Params[5]
+        self.c32 = Params[5]        
         
         self.s_1 = Params[6]
         self.s_2 = Params[7]
@@ -27,7 +27,7 @@ class DWPM(Model):
         
         x1, x2 = x[0:2]
 
-        if x1 + x2 > 1:
+        if x1 + x2 > 0.999:
             return NaN
 
         else:
@@ -48,8 +48,8 @@ class DWPM(Model):
         
         x1, x2 = x[0:2]
 
-        if x1 + x2 > 1:
-            return NaN
+        if x1 + x2 > 0.999:
+           return NaN
 
         else:
             
@@ -69,7 +69,7 @@ class DWPM(Model):
         
         x1, x2 = x[0:2]
         
-        if x1 + x2 > 1:
+        if x1 + x2 > 0.999:
         
             return NaN
         
@@ -96,8 +96,9 @@ class DWPM(Model):
                 HessEigens = eig(Hessian, left=False, right=False)
             else:
                 HessEigens = -1*ones(4)
-
+                
             if  all(HessEigens>0):
-                return True
+                return False
             else:
-                return False 
+                return True 
+

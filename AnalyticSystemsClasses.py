@@ -1,357 +1,220 @@
 #!/usr/bin/env python
 
 from scipy import *
-
+import numpy
 
 class SystemDWPM:
-    def __init__(self, Cell_s):
+    
+    def __init__(self, Params, Cell_s, C):
         self.s_1 = Cell_s[0]
         self.s_2 = Cell_s[1]
         self.s_3 = Cell_s[2]
-
-    def SystemEquations(self, Params, C, Actual, R, T):
+        
+        self.Lambda_12 = Params[0]/C[0]
+        self.Lambda_21 = Params[1]/C[1]
     
-        Lambda_12 = Params[0]/C[0]
-        Lambda_21 = Params[1]/C[1]
+        self.Lambda_23 = Params[4]/C[1]
+        self.Lambda_32 = Params[5]/C[2]
 
-        Lambda_13 = Params[2]/C[0]
-        Lambda_31 = Params[3]/C[2]
+        self.Lambda_13 = Params[2]/C[0]
+        self.Lambda_31 = Params[3]/C[2]
+
+    def NewN(self, x_alpha, x_Beta, m, step):
         
-        Lambda_23 = Params[4]/C[1]
-        Lambda_32 = Params[5]/C[2]
-                
-        m1 = Params[6]
-        n1 = Params[7]
-        c1 = Params[8]
+        direction = +1.
+        tieline3 = numpy.append(x_Beta - x_alpha, 0)
+        zaxis = numpy.array([0., 0., 1.])
 
-        m2 = Params[9]
-        n2 = Params[10]
-        c2 = Params[11]
+        UnitDirection = numpy.cross(tieline3, zaxis)[:2]
+        UnitDirection /= numpy.linalg.norm(UnitDirection)
+
+        return m + direction*step*UnitDirection
+
+    def SystemEquations(self, Predicted, n):
+
+        x1_a, x2_a, x1_b, x2_b, m1, n1, c1 = Predicted
+        xm_1, xm_2 = n
         
-        x1_a1 = Actual[0, 0]
-        x2_a1 = Actual[0, 1]
-        x1_b1 = Actual[0, 2]
-        x2_b1 = Actual[0, 3]
+        Eq1 =  -(-x2_a-x1_a+1)*log(self.Lambda_32**self.s_3*x2_a-x2_a+self.Lambda_31**self.s_3*x1_a-\
+        x1_a+1)/self.s_3-x1_a*log(self.Lambda_12**self.s_1*x2_a+self.Lambda_13**self.s_1*(-x2_a-\
+        x1_a+1)+x1_a)/self.s_1-x2_a*log(x2_a+self.Lambda_23**self.s_2*(-x2_a-x1_a+1)+\
+        self.Lambda_21**self.s_2*x1_a)/self.s_2+x2_a*log(x2_a)-n1*x2_a+log(-x2_a-x1_a+1)\
+        *(-x2_a-x1_a+1)+x1_a*log(x1_a)-m1*x1_a-c1
+
+        Eq2 = -(-x2_b-x1_b+1)*log(self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3*x1_b-\
+        x1_b+1)/self.s_3-x1_b*log(self.Lambda_12**self.s_1*x2_b+self.Lambda_13**self.s_1*(-x2_b-\
+        x1_b+1)+x1_b)/self.s_1-x2_b*log(x2_b+self.Lambda_23**self.s_2*(-x2_b-x1_b+1)+\
+        self.Lambda_21**self.s_2*x1_b)/self.s_2+x2_b*log(x2_b)-n1*x2_b+log(-x2_b-x1_b+1)\
+        *(-x2_b-x1_b+1)+x1_b*log(x1_b)-m1*x1_b-c1
+
+        Eq3 = log(self.Lambda_32**self.s_3*x2_a-x2_a+self.Lambda_31**self.s_3*x1_a-x1_a+1)/self.s_3-log(\
+        self.Lambda_12**self.s_1*x2_a+self.Lambda_13**self.s_1*(-x2_a-x1_a+1)+x1_a)/self.s_1-(\
+        self.Lambda_31**self.s_3-1)*(-x2_a-x1_a+1)/(self.s_3*(self.Lambda_32**self.s_3*x2_a-x2_a+\
+        self.Lambda_31**self.s_3*x1_a-x1_a+1))-(1-self.Lambda_13**self.s_1)*x1_a/(self.s_1*(self.Lambda_12**self.s_1\
+        *x2_a+self.Lambda_13**self.s_1*(-x2_a-x1_a+1)+x1_a))-(self.Lambda_21**self.s_2\
+        -self.Lambda_23**self.s_2)*x2_a/(self.s_2*(x2_a+self.Lambda_23**self.s_2*(-x2_a-x1_a+1)\
+        +self.Lambda_21**self.s_2*x1_a))-log(-x2_a-x1_a+1)+log(x1_a)-m1
+
+        Eq4 = log(self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3*x1_b-x1_b+1)/self.s_3-log(\
+        self.Lambda_12**self.s_1*x2_b+self.Lambda_13**self.s_1*(-x2_b-x1_b+1)+x1_b)/self.s_1-(self.Lambda_31**self.s_3\
+        -1)*(-x2_b-x1_b+1)/(self.s_3*(self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3\
+        *x1_b-x1_b+1))-(1-self.Lambda_13**self.s_1)*x1_b/(self.s_1*(self.Lambda_12**self.s_1\
+        *x2_b+self.Lambda_13**self.s_1*(-x2_b-x1_b+1)+x1_b))-(self.Lambda_21**self.s_2\
+        -self.Lambda_23**self.s_2)*x2_b/(self.s_2*(x2_b+self.Lambda_23**self.s_2*(-x2_b-x1_b+1)\
+        +self.Lambda_21**self.s_2*x1_b))-log(-x2_b-x1_b+1)+log(x1_b)-m1
         
-        x1_a2 = Actual[1, 0]
-        x2_a2 = Actual[1, 1]
-        x1_b2 = Actual[1, 2]
-        x2_b2 = Actual[1, 3]
+        Eq5 = log(self.Lambda_32**self.s_3*x2_a-x2_a+self.Lambda_31**self.s_3*x1_a-x1_a+1)/self.s_3-log(\
+        x2_a+self.Lambda_23**self.s_2*(-x2_a-x1_a+1)+self.Lambda_21**self.s_2*x1_a)/self.s_2+log(\
+        x2_a)-(self.Lambda_32**self.s_3-1)*(-x2_a-x1_a+1)/(self.s_3*(self.Lambda_32**self.s_3*\
+        x2_a-x2_a+self.Lambda_31**self.s_3*x1_a-x1_a+1))-(self.Lambda_12**self.s_1-self.Lambda_13**self.s_1\
+        )*x1_a/(self.s_1*(self.Lambda_12**self.s_1*x2_a+self.Lambda_13**self.s_1*(-x2_a-x1_a+1\
+        )+x1_a))-(1-self.Lambda_23**self.s_2)*x2_a/(self.s_2*(x2_a+self.Lambda_23**self.s_2*(\
+        -x2_a-x1_a+1)+self.Lambda_21**self.s_2*x1_a))-log(-x2_a-x1_a+1)-n1
 
-        Eq1 = float(-(-x2_a1-x1_a1+1)*log(Lambda_32**self.s_3*x2_a1-x2_a1+Lambda_31**self.s_3*x1_a1-x1_a1+1)/self.s_3-x1_a1*log(Lambda_12**self.s_1*x2_a1+Lambda_13**self.s_1*(-x2_a1-x1_a1+1)+x1_a1)/self.s_1-x2_a1*log(x2_a1+Lambda_23**self.s_2*(-x2_a1-x1_a1+1)+Lambda_21**self.s_2*x1_a1)/self.s_2+x2_a1*log(x2_a1)-n1*x2_a1+log(-x2_a1-x1_a1+1)*(-x2_a1-x1_a1+1)+x1_a1*log(x1_a1)-m1*x1_a1-c1 )
+        Eq6 = log(self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3*x1_b-x1_b+1)/self.s_3-log(\
+        x2_b+self.Lambda_23**self.s_2*(-x2_b-x1_b+1)+self.Lambda_21**self.s_2*x1_b)/self.s_2+log(\
+        x2_b)-(self.Lambda_32**self.s_3-1)*(-x2_b-x1_b+1)/(self.s_3*(self.Lambda_32**self.s_3*\
+        x2_b-x2_b+self.Lambda_31**self.s_3*x1_b-x1_b+1))-(self.Lambda_12**self.s_1-self.Lambda_13**self.s_1\
+        )*x1_b/(self.s_1*(self.Lambda_12**self.s_1*x2_b+self.Lambda_13**self.s_1*(-x2_b-x1_b+1\
+        )+x1_b))-(1-self.Lambda_23**self.s_2)*x2_b/(self.s_2*(x2_b+self.Lambda_23**self.s_2*(\
+        -x2_b-x1_b+1)+self.Lambda_21**self.s_2*x1_b))-log(-x2_b-x1_b+1)-n1
 
-        Eq2 = float(-(-x2_b1-x1_b1+1)*log(Lambda_32**self.s_3*x2_b1-x2_b1+Lambda_31**self.s_3*x1_b1-x1_b1+1)/self.s_3-x1_b1*log(Lambda_12**self.s_1*x2_b1+Lambda_13**self.s_1*(-x2_b1-x1_b1+1)+x1_b1)/self.s_1-x2_b1*log(x2_b1+Lambda_23**self.s_2*(-x2_b1-x1_b1+1)+Lambda_21**self.s_2*x1_b1)/self.s_2+x2_b1*log(x2_b1)-n1*x2_b1+log(-x2_b1-x1_b1+1)*(-x2_b1-x1_b1+1)+x1_b1*log(x1_b1)-m1*x1_b1-c1)
+        #Eq7 = (xm_1-x1_a)/(x1_b-x1_a)-(xm_2-x2_a)/(x2_b-x2_a)
+        Eq7 = -n1*xm_2+(n1*x2_b-n1*x2_a+m1*x1_b-m1*x1_a)*(xm_1-x1_a)/(x1_b-x1_a)-m1*xm_1+n1*x2_a+m1*x1_a
 
-        Eq3 = float(-(-x2_a2-x1_a2+1)*log(Lambda_32**self.s_3*x2_a2-x2_a2+Lambda_31**self.s_3*x1_a2-x1_a2+1)/self.s_3-x1_a2*log(Lambda_12**self.s_1*x2_a2+Lambda_13**self.s_1*(-x2_a2-x1_a2+1)+x1_a2)/self.s_1-x2_a2*log(x2_a2+Lambda_23**self.s_2*(-x2_a2-x1_a2+1)+Lambda_21**self.s_2*x1_a2)/self.s_2+x2_a2*log(x2_a2)-n2*x2_a2+log(-x2_a2-x1_a2+1)*(-x2_a2-x1_a2+1)+x1_a2*log(x1_a2)-m2*x1_a2-c2)
+        return real(array([Eq1, Eq2, Eq3, Eq4, Eq5, Eq6, Eq7]))
+
+    def SystemEquationsJac(self, Predicted, n):
+
+        x1_a, x2_a, x1_b, x2_b, m1, n1, c1 = Predicted
+        xm_1, xm_2 = n
+
+        Jac1 = [log(self.Lambda_32**self.s_3*x2_a-x2_a+self.Lambda_31**self.s_3*x1_a-x1_a+1)/self.s_3-log(\
+        self.Lambda_12**self.s_1*x2_a+self.Lambda_13**self.s_1*(-x2_a-x1_a+1)+x1_a)/self.s_1-(\
+        self.Lambda_31**self.s_3-1)*(-x2_a-x1_a+1)/(self.s_3*(self.Lambda_32**self.s_3*x2_a-x2_a+\
+        self.Lambda_31**self.s_3*x1_a-x1_a+1))-(1-self.Lambda_13**self.s_1)*x1_a/(self.s_1*(self.Lambda_12**self.s_1\
+        *x2_a+self.Lambda_13**self.s_1*(-x2_a-x1_a+1)+x1_a))-(self.Lambda_21**self.s_2\
+        -self.Lambda_23**self.s_2)*x2_a/(self.s_2*(x2_a+self.Lambda_23**self.s_2*(-x2_a-x1_a\
+        +1)+self.Lambda_21**self.s_2*x1_a))-log(-x2_a-x1_a+1)+log(x1_a)-m1,log(self.Lambda_32**self.s_3\
+        *x2_a-x2_a+self.Lambda_31**self.s_3*x1_a-x1_a+1)/self.s_3-log(x2_a\
+        +self.Lambda_23**self.s_2*(-x2_a-x1_a+1)+self.Lambda_21**self.s_2*x1_a)/self.s_2+log(x2_a\
+        )-(self.Lambda_32**self.s_3-1)*(-x2_a-x1_a+1)/(self.s_3*(self.Lambda_32**self.s_3*x2_a-\
+        x2_a+self.Lambda_31**self.s_3*x1_a-x1_a+1))-(self.Lambda_12**self.s_1-self.Lambda_13**self.s_1\
+        )*x1_a/(self.s_1*(self.Lambda_12**self.s_1*x2_a+self.Lambda_13**self.s_1*(-x2_a-x1_a+1)\
+        +x1_a))-(1-self.Lambda_23**self.s_2)*x2_a/(self.s_2*(x2_a+self.Lambda_23**self.s_2*(-x2_a\
+        -x1_a+1)+self.Lambda_21**self.s_2*x1_a))-log(-x2_a-x1_a+1)-n1,0,0,-x1_a,\
+        -x2_a,-1]
+
+        Jac2 = [0,0,log(self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3*x1_b-x1_b+1)/self.s_3-\
+        log(self.Lambda_12**self.s_1*x2_b+self.Lambda_13**self.s_1*(-x2_b-x1_b+1)+x1_b)/self.s_1\
+        -(self.Lambda_31**self.s_3-1)*(-x2_b-x1_b+1)/(self.s_3*(self.Lambda_32**self.s_3*x2_b-x2_b\
+        +self.Lambda_31**self.s_3*x1_b-x1_b+1))-(1-self.Lambda_13**self.s_1)*x1_b/(self.s_1*(\
+        self.Lambda_12**self.s_1*x2_b+self.Lambda_13**self.s_1*(-x2_b-x1_b+1)+x1_b))-(self.Lambda_21**self.s_2\
+        -self.Lambda_23**self.s_2)*x2_b/(self.s_2*(x2_b+self.Lambda_23**self.s_2*(-x2_b-\
+        x1_b+1)+self.Lambda_21**self.s_2*x1_b))-log(-x2_b-x1_b+1)+log(x1_b)-m1,\
+        log(self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3*x1_b-x1_b+1)/self.s_3-\
+        log(x2_b+self.Lambda_23**self.s_2*(-x2_b-x1_b+1)+self.Lambda_21**self.s_2*x1_b)/self.s_2+\
+        log(x2_b)-(self.Lambda_32**self.s_3-1)*(-x2_b-x1_b+1)/(self.s_3*(self.Lambda_32**self.s_3*\
+        x2_b-x2_b+self.Lambda_31**self.s_3*x1_b-x1_b+1))-(self.Lambda_12**self.s_1-self.Lambda_13**self.s_1\
+        )*x1_b/(self.s_1*(self.Lambda_12**self.s_1*x2_b+self.Lambda_13**self.s_1*(-x2_b-x1_b\
+        +1)+x1_b))-(1-self.Lambda_23**self.s_2)*x2_b/(self.s_2*(x2_b+self.Lambda_23**self.s_2*(\
+        -x2_b-x1_b+1)+self.Lambda_21**self.s_2*x1_b))-log(-x2_b-x1_b+1)-n1,-x1_b,\
+        -x2_b,-1]
+
+        Jac3 = [2*(self.Lambda_31**self.s_3-1)/(self.s_3*(self.Lambda_32**self.s_3*x2_a-x2_a+self.Lambda_31**self.s_3\
+        *x1_a-x1_a+1))+(self.Lambda_31**self.s_3-1)**2*(-x2_a-x1_a+1)/(self.s_3*(self.Lambda_32**self.s_3\
+        *x2_a-x2_a+self.Lambda_31**self.s_3*x1_a-x1_a+1)**2)-2*(1-self.Lambda_13**self.s_1\
+        )/(self.s_1*(self.Lambda_12**self.s_1*x2_a+self.Lambda_13**self.s_1*(-x2_a-x1_a\
+        +1)+x1_a))+(1-self.Lambda_13**self.s_1)**2*x1_a/(self.s_1*(self.Lambda_12**self.s_1*x2_a\
+        +self.Lambda_13**self.s_1*(-x2_a-x1_a+1)+x1_a)**2)+(self.Lambda_21**self.s_2-\
+        self.Lambda_23**self.s_2)**2*x2_a/(self.s_2*(x2_a+self.Lambda_23**self.s_2*(-x2_a-x1_a+1)+\
+        self.Lambda_21**self.s_2*x1_a)**2)+1/(-x2_a-x1_a+1)+1/x1_a,(self.Lambda_32**self.s_3-1)\
+        /(self.s_3*(self.Lambda_32**self.s_3*x2_a-x2_a+self.Lambda_31**self.s_3*x1_a-x1_a+1))+(\
+        self.Lambda_31**self.s_3-1)/(self.s_3*(self.Lambda_32**self.s_3*x2_a-x2_a+self.Lambda_31**self.s_3*\
+        x1_a-x1_a+1))+(self.Lambda_31**self.s_3-1)*(self.Lambda_32**self.s_3-1)*(-x2_a-x1_a\
+        +1)/(self.s_3*(self.Lambda_32**self.s_3*x2_a-x2_a+self.Lambda_31**self.s_3*x1_a-x1_a+1)**2\
+        )-(self.Lambda_12**self.s_1-self.Lambda_13**self.s_1)/(self.s_1*(self.Lambda_12**self.s_1*x2_a+\
+        self.Lambda_13**self.s_1*(-x2_a-x1_a+1)+x1_a))+(1-self.Lambda_13**self.s_1)*(\
+        self.Lambda_12**self.s_1-self.Lambda_13**self.s_1)*x1_a/(self.s_1*(self.Lambda_12**self.s_1*x2_a+self.Lambda_13**self.s_1\
+        *(-x2_a-x1_a+1)+x1_a)**2)-(self.Lambda_21**self.s_2-self.Lambda_23**self.s_2)\
+        /(self.s_2*(x2_a+self.Lambda_23**self.s_2*(-x2_a-x1_a+1)+self.Lambda_21**self.s_2*x1_a))\
+        +(1-self.Lambda_23**self.s_2)*(self.Lambda_21**self.s_2-self.Lambda_23**self.s_2)*x2_a/(self.s_2*(\
+        x2_a+self.Lambda_23**self.s_2*(-x2_a-x1_a+1)+self.Lambda_21**self.s_2*x1_a)**2)+1/(\
+        -x2_a-x1_a+1),0,0,-1,0,0]
+
+        Jac4 = [0,0,2*(self.Lambda_31**self.s_3-1)/(self.s_3*(self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3\
+        *x1_b-x1_b+1))+(self.Lambda_31**self.s_3-1)**2*(-x2_b-x1_b+1)/(self.s_3*(\
+        self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3*x1_b-x1_b+1)**2)-2*(1-\
+        self.Lambda_13**self.s_1)/(self.s_1*(self.Lambda_12**self.s_1*x2_b+self.Lambda_13**self.s_1*(-x2_b-\
+        x1_b+1)+x1_b))+(1-self.Lambda_13**self.s_1)**2*x1_b/(self.s_1*(self.Lambda_12**self.s_1*\
+        x2_b+self.Lambda_13**self.s_1*(-x2_b-x1_b+1)+x1_b)**2)+(self.Lambda_21**self.s_2-\
+        self.Lambda_23**self.s_2)**2*x2_b/(self.s_2*(x2_b+self.Lambda_23**self.s_2*(-x2_b-x1_b+1)+\
+        self.Lambda_21**self.s_2*x1_b)**2)+1/(-x2_b-x1_b+1)+1/x1_b,(self.Lambda_32**self.s_3\
+        -1)/(self.s_3*(self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3*x1_b-x1_b+1)\
+        )+(self.Lambda_31**self.s_3-1)/(self.s_3*(self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3\
+        *x1_b-x1_b+1))+(self.Lambda_31**self.s_3-1)*(self.Lambda_32**self.s_3-1)*(-x2_b-\
+        x1_b+1)/(self.s_3*(self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3*x1_b-x1_b\
+        +1)**2)-(self.Lambda_12**self.s_1-self.Lambda_13**self.s_1)/(self.s_1*(self.Lambda_12**self.s_1*\
+        x2_b+self.Lambda_13**self.s_1*(-x2_b-x1_b+1)+x1_b))+(1-self.Lambda_13**self.s_1)*(self.Lambda_12**self.s_1\
+        -self.Lambda_13**self.s_1)*x1_b/(self.s_1*(self.Lambda_12**self.s_1*x2_b+self.Lambda_13**self.s_1\
+        *(-x2_b-x1_b+1)+x1_b)**2)-(self.Lambda_21**self.s_2-self.Lambda_23**self.s_2\
+        )/(self.s_2*(x2_b+self.Lambda_23**self.s_2*(-x2_b-x1_b+1)+self.Lambda_21**self.s_2*x1_b\
+        ))+(1-self.Lambda_23**self.s_2)*(self.Lambda_21**self.s_2-self.Lambda_23**self.s_2)*x2_b/(\
+        self.s_2*(x2_b+self.Lambda_23**self.s_2*(-x2_b-x1_b+1)+self.Lambda_21**self.s_2*x1_b)**2)\
+        +1/(-x2_b-x1_b+1),-1,0,0]
         
-        Eq4 = float(-(-x2_b2-x1_b2+1)*log(Lambda_32**self.s_3*x2_b2-x2_b2+Lambda_31**self.s_3*x1_b2-x1_b2+1)/self.s_3-x1_b2*log(Lambda_12**self.s_1*x2_b2+Lambda_13**self.s_1*(-x2_b2-x1_b2+1)+x1_b2)/self.s_1-x2_b2*log(x2_b2+Lambda_23**self.s_2*(-x2_b2-x1_b2+1)+Lambda_21**self.s_2*x1_b2)/self.s_2+x2_b2*log(x2_b2)-n2*x2_b2+log(-x2_b2-x1_b2+1)*(-x2_b2-x1_b2+1)+x1_b2*log(x1_b2)-m2*x1_b2-c2)
+        Jac5 = [(self.Lambda_32**self.s_3-1)/(self.s_3*(self.Lambda_32**self.s_3*x2_a-x2_a+self.Lambda_31**self.s_3*\
+        x1_a-x1_a+1))+(self.Lambda_31**self.s_3-1)/(self.s_3*(self.Lambda_32**self.s_3*x2_a-x2_a\
+        +self.Lambda_31**self.s_3*x1_a-x1_a+1))+(self.Lambda_31**self.s_3-1)*(self.Lambda_32**self.s_3\
+        -1)*(-x2_a-x1_a+1)/(self.s_3*(self.Lambda_32**self.s_3*x2_a-x2_a+self.Lambda_31**self.s_3\
+        *x1_a-x1_a+1)**2)-(self.Lambda_12**self.s_1-self.Lambda_13**self.s_1)/(self.s_1*(self.Lambda_12**self.s_1\
+        *x2_a+self.Lambda_13**self.s_1*(-x2_a-x1_a+1)+x1_a))+(1-self.Lambda_13**self.s_1\
+        )*(self.Lambda_12**self.s_1-self.Lambda_13**self.s_1)*x1_a/(self.s_1*(self.Lambda_12**self.s_1\
+        *x2_a+self.Lambda_13**self.s_1*(-x2_a-x1_a+1)+x1_a)**2)-(self.Lambda_21**self.s_2\
+        -self.Lambda_23**self.s_2)/(self.s_2*(x2_a+self.Lambda_23**self.s_2*(-x2_a-x1_a+1)+self.Lambda_21**self.s_2\
+        *x1_a))+(1-self.Lambda_23**self.s_2)*(self.Lambda_21**self.s_2-self.Lambda_23**self.s_2\
+        )*x2_a/(self.s_2*(x2_a+self.Lambda_23**self.s_2*(-x2_a-x1_a+1)+self.Lambda_21**self.s_2\
+        *x1_a)**2)+1/(-x2_a-x1_a+1),2*(self.Lambda_32**self.s_3-1)/(self.s_3*(self.Lambda_32**self.s_3\
+        *x2_a-x2_a+self.Lambda_31**self.s_3*x1_a-x1_a+1))+(self.Lambda_32**self.s_3\
+        -1)**2*(-x2_a-x1_a+1)/(self.s_3*(self.Lambda_32**self.s_3*x2_a-x2_a+self.Lambda_31**self.s_3\
+        *x1_a-x1_a+1)**2)+(self.Lambda_12**self.s_1-self.Lambda_13**self.s_1)**2*x1_a/(self.s_1\
+        *(self.Lambda_12**self.s_1*x2_a+self.Lambda_13**self.s_1*(-x2_a-x1_a+1)+x1_a)**2\
+        )-2*(1-self.Lambda_23**self.s_2)/(self.s_2*(x2_a+self.Lambda_23**self.s_2*(-x2_a-x1_a+1)\
+        +self.Lambda_21**self.s_2*x1_a))+(1-self.Lambda_23**self.s_2)**2*x2_a/(self.s_2*(x2_a+self.Lambda_23**self.s_2\
+        *(-x2_a-x1_a+1)+self.Lambda_21**self.s_2*x1_a)**2)+1/x2_a+1/(\
+        -x2_a-x1_a+1),0,0,0,-1,0]
+
+        Jac6 = [0,0,(self.Lambda_32**self.s_3-1)/(self.s_3*(self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3\
+        *x1_b-x1_b+1))+(self.Lambda_31**self.s_3-1)/(self.s_3*(self.Lambda_32**self.s_3*x2_b-\
+        x2_b+self.Lambda_31**self.s_3*x1_b-x1_b+1))+(self.Lambda_31**self.s_3-1)*(self.Lambda_32**self.s_3\
+        -1)*(-x2_b-x1_b+1)/(self.s_3*(self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3\
+        *x1_b-x1_b+1)**2)-(self.Lambda_12**self.s_1-self.Lambda_13**self.s_1)/(self.s_1*(self.Lambda_12**self.s_1\
+        *x2_b+self.Lambda_13**self.s_1*(-x2_b-x1_b+1)+x1_b))+(1-self.Lambda_13**self.s_1\
+        )*(self.Lambda_12**self.s_1-self.Lambda_13**self.s_1)*x1_b/(self.s_1*(self.Lambda_12**self.s_1\
+        *x2_b+self.Lambda_13**self.s_1*(-x2_b-x1_b+1)+x1_b)**2)-(self.Lambda_21**self.s_2\
+        -self.Lambda_23**self.s_2)/(self.s_2*(x2_b+self.Lambda_23**self.s_2*(-x2_b-x1_b+1)+\
+        self.Lambda_21**self.s_2*x1_b))+(1-self.Lambda_23**self.s_2)*(self.Lambda_21**self.s_2-self.Lambda_23**self.s_2\
+        )*x2_b/(self.s_2*(x2_b+self.Lambda_23**self.s_2*(-x2_b-x1_b+1)+self.Lambda_21**self.s_2\
+        *x1_b)**2)+1/(-x2_b-x1_b+1),2*(self.Lambda_32**self.s_3-1)/(self.s_3*(self.Lambda_32**self.s_3\
+        *x2_b-x2_b+self.Lambda_31**self.s_3*x1_b-x1_b+1))+(self.Lambda_32**self.s_3\
+        -1)**2*(-x2_b-x1_b+1)/(self.s_3*(self.Lambda_32**self.s_3*x2_b-x2_b+self.Lambda_31**self.s_3\
+        *x1_b-x1_b+1)**2)+(self.Lambda_12**self.s_1-self.Lambda_13**self.s_1)**2*x1_b\
+        /(self.s_1*(self.Lambda_12**self.s_1*x2_b+self.Lambda_13**self.s_1*(-x2_b-x1_b+1)+x1_b\
+        )**2)-2*(1-self.Lambda_23**self.s_2)/(self.s_2*(x2_b+self.Lambda_23**self.s_2*(-x2_b-x1_b\
+        +1)+self.Lambda_21**self.s_2*x1_b))+(1-self.Lambda_23**self.s_2)**2*x2_b/(self.s_2*(x2_b\
+        +self.Lambda_23**self.s_2*(-x2_b-x1_b+1)+self.Lambda_21**self.s_2*x1_b)**2)+1/x2_b\
+        +1/(-x2_b-x1_b+1),0,-1,0]
+
+        Jac7 = [(n1*x2_b-n1*x2_a+m1*x1_b-m1*x1_a)*(xm_1-x1_a)/(x1_b-x1_a)**2-m1*(\
+        xm_1-x1_a)/(x1_b-x1_a)-(n1*x2_b-n1*x2_a+m1*x1_b-m1*x1_a)/(x1_b-\
+        x1_a)+m1,n1-n1*(xm_1-x1_a)/(x1_b-x1_a),m1*(xm_1-x1_a)/(x1_b-x1_a\
+        )-(n1*x2_b-n1*x2_a+m1*x1_b-m1*x1_a)*(xm_1-x1_a)/(x1_b-x1_a)**2\
+        ,n1*(xm_1-x1_a)/(x1_b-x1_a),0,-xm_2+(x2_b-x2_a)*(xm_1-x1_a)/(x1_b\
+        -x1_a)+x2_a,0]
+
+        return real(array([Jac1, Jac2, Jac3, Jac4, Jac5, Jac6, Jac7]))
         
-        Eq5 = float(log(Lambda_32**self.s_3*x2_a1-x2_a1+Lambda_31**self.s_3*x1_a1-x1_a1+1)/self.s_3-log(Lambda_12**self.s_1*x2_a1+Lambda_13**self.s_1*(-x2_a1-x1_a1+1)+x1_a1)/self.s_1-(Lambda_31**self.s_3-1)*(-x2_a1-x1_a1+1)/(self.s_3*(Lambda_32**self.s_3*x2_a1-x2_a1+Lambda_31**self.s_3*x1_a1-x1_a1+1))-(1-Lambda_13**self.s_1)*x1_a1/(self.s_1*(Lambda_12**self.s_1*x2_a1+Lambda_13**self.s_1*(-x2_a1-x1_a1+1)+x1_a1))-(Lambda_21**self.s_2-Lambda_23**self.s_2)*x2_a1/(self.s_2*(x2_a1+Lambda_23**self.s_2*(-x2_a1-x1_a1+1)+Lambda_21**self.s_2*x1_a1))-log(-x2_a1-x1_a1+1)+log(x1_a1)-m1)
-
-        Eq6 = float(log(Lambda_32**self.s_3*x2_b1-x2_b1+Lambda_31**self.s_3*x1_b1-x1_b1+1)/self.s_3-log(Lambda_12**self.s_1*x2_b1+Lambda_13**self.s_1*(-x2_b1-x1_b1+1)+x1_b1)/self.s_1-(Lambda_31**self.s_3-1)*(-x2_b1-x1_b1+1)/(self.s_3*(Lambda_32**self.s_3*x2_b1-x2_b1+Lambda_31**self.s_3*x1_b1-x1_b1+1))-(1-Lambda_13**self.s_1)*x1_b1/(self.s_1*(Lambda_12**self.s_1*x2_b1+Lambda_13**self.s_1*(-x2_b1-x1_b1+1)+x1_b1))-(Lambda_21**self.s_2-Lambda_23**self.s_2)*x2_b1/(self.s_2*(x2_b1+Lambda_23**self.s_2*(-x2_b1-x1_b1+1)+Lambda_21**self.s_2*x1_b1))-log(-x2_b1-x1_b1+1)+log(x1_b1)-m1)
-
-        Eq7 = float(log(Lambda_32**self.s_3*x2_a2-x2_a2+Lambda_31**self.s_3*x1_a2-x1_a2+1)/self.s_3-log(Lambda_12**self.s_1*x2_a2+Lambda_13**self.s_1*(-x2_a2-x1_a2+1)+x1_a2)/self.s_1-(Lambda_31**self.s_3-1)*(-x2_a2-x1_a2+1)/(self.s_3*(Lambda_32**self.s_3*x2_a2-x2_a2+Lambda_31**self.s_3*x1_a2-x1_a2+1))-(1-Lambda_13**self.s_1)*x1_a2/(self.s_1*(Lambda_12**self.s_1*x2_a2+Lambda_13**self.s_1*(-x2_a2-x1_a2+1)+x1_a2))-(Lambda_21**self.s_2-Lambda_23**self.s_2)*x2_a2/(self.s_2*(x2_a2+Lambda_23**self.s_2*(-x2_a2-x1_a2+1)+Lambda_21**self.s_2*x1_a2))-log(-x2_a2-x1_a2+1)+log(x1_a2)-m2)
-
-        Eq8 = float(log(Lambda_32**self.s_3*x2_b2-x2_b2+Lambda_31**self.s_3*x1_b2-x1_b2+1)/self.s_3-log(Lambda_12**self.s_1*x2_b2+Lambda_13**self.s_1*(-x2_b2-x1_b2+1)+x1_b2)/self.s_1-(Lambda_31**self.s_3-1)*(-x2_b2-x1_b2+1)/(self.s_3*(Lambda_32**self.s_3*x2_b2-x2_b2+Lambda_31**self.s_3*x1_b2-x1_b2+1))-(1-Lambda_13**self.s_1)*x1_b2/(self.s_1*(Lambda_12**self.s_1*x2_b2+Lambda_13**self.s_1*(-x2_b2-x1_b2+1)+x1_b2))-(Lambda_21**self.s_2-Lambda_23**self.s_2)*x2_b2/(self.s_2*(x2_b2+Lambda_23**self.s_2*(-x2_b2-x1_b2+1)+Lambda_21**self.s_2*x1_b2))-log(-x2_b2-x1_b2+1)+log(x1_b2)-m2)
-
-        Eq9 = float(log(Lambda_32**self.s_3*x2_a1-x2_a1+Lambda_31**self.s_3*x1_a1-x1_a1+1)/self.s_3-log(x2_a1+Lambda_23**self.s_2*(-x2_a1-x1_a1+1)+Lambda_21**self.s_2*x1_a1)/self.s_2+log(x2_a1)-(Lambda_32**self.s_3-1)*(-x2_a1-x1_a1+1)/(self.s_3*(Lambda_32**self.s_3*x2_a1-x2_a1+Lambda_31**self.s_3*x1_a1-x1_a1+1))-(Lambda_12**self.s_1-Lambda_13**self.s_1)*x1_a1/(self.s_1*(Lambda_12**self.s_1*x2_a1+Lambda_13**self.s_1*(-x2_a1-x1_a1+1)+x1_a1))-(1-Lambda_23**self.s_2)*x2_a1/(self.s_2*(x2_a1+Lambda_23**self.s_2*(-x2_a1-x1_a1+1)+Lambda_21**self.s_2*x1_a1))-log(-x2_a1-x1_a1+1)-n1)
-
-        Eq10 = float(log(Lambda_32**self.s_3*x2_b1-x2_b1+Lambda_31**self.s_3*x1_b1-x1_b1+1)/self.s_3-log(x2_b1+Lambda_23**self.s_2*(-x2_b1-x1_b1+1)+Lambda_21**self.s_2*x1_b1)/self.s_2+log(x2_b1)-(Lambda_32**self.s_3-1)*(-x2_b1-x1_b1+1)/(self.s_3*(Lambda_32**self.s_3*x2_b1-x2_b1+Lambda_31**self.s_3*x1_b1-x1_b1+1))-(Lambda_12**self.s_1-Lambda_13**self.s_1)*x1_b1/(self.s_1*(Lambda_12**self.s_1*x2_b1+Lambda_13**self.s_1*(-x2_b1-x1_b1+1)+x1_b1))-(1-Lambda_23**self.s_2)*x2_b1/(self.s_2*(x2_b1+Lambda_23**self.s_2*(-x2_b1-x1_b1+1)+Lambda_21**self.s_2*x1_b1))-log(-x2_b1-x1_b1+1)-n1)
-
-        Eq11 = float(log(Lambda_32**self.s_3*x2_a2-x2_a2+Lambda_31**self.s_3*x1_a2-x1_a2+1)/self.s_3-log(x2_a2+Lambda_23**self.s_2*(-x2_a2-x1_a2+1)+Lambda_21**self.s_2*x1_a2)/self.s_2+log(x2_a2)-(Lambda_32**self.s_3-1)*(-x2_a2-x1_a2+1)/(self.s_3*(Lambda_32**self.s_3*x2_a2-x2_a2+Lambda_31**self.s_3*x1_a2-x1_a2+1))-(Lambda_12**self.s_1-Lambda_13**self.s_1)*x1_a2/(self.s_1*(Lambda_12**self.s_1*x2_a2+Lambda_13**self.s_1*(-x2_a2-x1_a2+1)+x1_a2))-(1-Lambda_23**self.s_2)*x2_a2/(self.s_2*(x2_a2+Lambda_23**self.s_2*(-x2_a2-x1_a2+1)+Lambda_21**self.s_2*x1_a2))-log(-x2_a2-x1_a2+1)-n2)
-
-        Eq12 = float(log(Lambda_32**self.s_3*x2_b2-x2_b2+Lambda_31**self.s_3*x1_b2-x1_b2+1)/self.s_3-log(x2_b2+Lambda_23**self.s_2*(-x2_b2-x1_b2+1)+Lambda_21**self.s_2*x1_b2)/self.s_2+log(x2_b2)-(Lambda_32**self.s_3-1)*(-x2_b2-x1_b2+1)/(self.s_3*(Lambda_32**self.s_3*x2_b2-x2_b2+Lambda_31**self.s_3*x1_b2-x1_b2+1))-(Lambda_12**self.s_1-Lambda_13**self.s_1)*x1_b2/(self.s_1*(Lambda_12**self.s_1*x2_b2+Lambda_13**self.s_1*(-x2_b2-x1_b2+1)+x1_b2))-(1-Lambda_23**self.s_2)*x2_b2/(self.s_2*(x2_b2+Lambda_23**self.s_2*(-x2_b2-x1_b2+1)+Lambda_21**self.s_2*x1_b2))-log(-x2_b2-x1_b2+1)-n2)
-       
-        return array([Eq1, Eq2, Eq3, Eq4, Eq5, Eq6, Eq7, Eq8, Eq9, Eq10, Eq11, Eq12])
-
-    def SystemEquationsJac(self, Params, C, Actual, R, T):
-
-        c_12 = Params[0]
-        c_21 = Params[1]
-
-        c_13 = Params[2]
-        c_31 = Params[3]
         
-        c_23 = Params[4]
-        c_32 = Params[5]
-
-        c_1 = float(C[0])
-        c_2 = float(C[1])
-        c_3 = float(C[2])
-                
-        m1 = Params[6]
-        n1 = Params[7]
-        c1 = Params[8]
-
-        m2 = Params[9]
-        n2 = Params[10]
-        c2 = Params[11]
-        
-        x1_a1 = Actual[0, 0]
-        x2_a1 = Actual[0, 1]
-        x1_b1 = Actual[0, 2]
-        x2_b1 = Actual[0, 3]
-        
-        x1_a2 = Actual[1, 0]
-        x2_a2 = Actual[1, 1]
-        x1_b2 = Actual[1, 2]
-        x2_b2 = Actual[1, 3]
-
-        Row1 = [-(c_12/c_1)**self.s_1*x1_a1*x2_a1/(c_12*((c_12/c_1)**self.s_1*x2_a1+(c_13/\
-        c_1)**self.s_1*(-x2_a1-x1_a1+1)+x1_a1)),-(c_21/c_2)**self.s_2*x1_a1*x2_a1/\
-        (c_21*(x2_a1+(c_23/c_2)**self.s_2*(-x2_a1-x1_a1+1)+(c_21/c_2)**self.s_2*\
-        x1_a1)),-(c_13/c_1)**self.s_1*x1_a1*(-x2_a1-x1_a1+1)/(c_13*((c_12/c_1\
-        )**self.s_1*x2_a1+(c_13/c_1)**self.s_1*(-x2_a1-x1_a1+1)+x1_a1)),-(c_31/c_3\
-        )**self.s_3*x1_a1*(-x2_a1-x1_a1+1)/(c_31*((c_32/c_3)**self.s_3*x2_a1-x2_a1\
-        +(c_31/c_3)**self.s_3*x1_a1-x1_a1+1)),-(c_23/c_2)**self.s_2*(-x2_a1-x1_a1\
-        +1)*x2_a1/(c_23*(x2_a1+(c_23/c_2)**self.s_2*(-x2_a1-x1_a1+1)+(c_21\
-        /c_2)**self.s_2*x1_a1)),-(c_32/c_3)**self.s_3*(-x2_a1-x1_a1+1)*x2_a1/(c_32\
-        *((c_32/c_3)**self.s_3*x2_a1-x2_a1+(c_31/c_3)**self.s_3*x1_a1-x1_a1+1)),\
-        -x1_a1,-x2_a1,-1,0,0,0]
-
-        Row2 = [-(c_12/c_1)**self.s_1*x1_b1*x2_b1/(c_12*((c_12/c_1)**self.s_1*x2_b1+(c_13/\
-        c_1)**self.s_1*(-x2_b1-x1_b1+1)+x1_b1)),-(c_21/c_2)**self.s_2*x1_b1*x2_b1/\
-        (c_21*(x2_b1+(c_23/c_2)**self.s_2*(-x2_b1-x1_b1+1)+(c_21/c_2)**self.s_2*\
-        x1_b1)),-(c_13/c_1)**self.s_1*x1_b1*(-x2_b1-x1_b1+1)/(c_13*((c_12/c_1\
-        )**self.s_1*x2_b1+(c_13/c_1)**self.s_1*(-x2_b1-x1_b1+1)+x1_b1)),-(c_31/c_3\
-        )**self.s_3*x1_b1*(-x2_b1-x1_b1+1)/(c_31*((c_32/c_3)**self.s_3*x2_b1-x2_b1\
-        +(c_31/c_3)**self.s_3*x1_b1-x1_b1+1)),-(c_23/c_2)**self.s_2*(-x2_b1-x1_b1\
-        +1)*x2_b1/(c_23*(x2_b1+(c_23/c_2)**self.s_2*(-x2_b1-x1_b1+1)+(c_21\
-        /c_2)**self.s_2*x1_b1)),-(c_32/c_3)**self.s_3*(-x2_b1-x1_b1+1)*x2_b1/(c_32\
-        *((c_32/c_3)**self.s_3*x2_b1-x2_b1+(c_31/c_3)**self.s_3*x1_b1-x1_b1+1)),\
-        -x1_b1,-x2_b1,-1,0,0,0]
-
-        Row3 = [-(c_12/c_1)**self.s_1*x1_a2*x2_a2/(c_12*((c_12/c_1)**self.s_1*x2_a2+(c_13/\
-        c_1)**self.s_1*(-x2_a2-x1_a2+1)+x1_a2)),-(c_21/c_2)**self.s_2*x1_a2*x2_a2/\
-        (c_21*(x2_a2+(c_23/c_2)**self.s_2*(-x2_a2-x1_a2+1)+(c_21/c_2)**self.s_2*\
-        x1_a2)),-(c_13/c_1)**self.s_1*x1_a2*(-x2_a2-x1_a2+1)/(c_13*((c_12/c_1\
-        )**self.s_1*x2_a2+(c_13/c_1)**self.s_1*(-x2_a2-x1_a2+1)+x1_a2)),-(c_31/c_3\
-        )**self.s_3*x1_a2*(-x2_a2-x1_a2+1)/(c_31*((c_32/c_3)**self.s_3*x2_a2-x2_a2\
-        +(c_31/c_3)**self.s_3*x1_a2-x1_a2+1)),-(c_23/c_2)**self.s_2*(-x2_a2-x1_a2\
-        +1)*x2_a2/(c_23*(x2_a2+(c_23/c_2)**self.s_2*(-x2_a2-x1_a2+1)+(c_21\
-        /c_2)**self.s_2*x1_a2)),-(c_32/c_3)**self.s_3*(-x2_a2-x1_a2+1)*x2_a2/(c_32\
-        *((c_32/c_3)**self.s_3*x2_a2-x2_a2+(c_31/c_3)**self.s_3*x1_a2-x1_a2+1)),\
-        0,0,0,-x1_a2,-x2_a2,-1]
-
-        Row4 = [-(c_12/c_1)**self.s_1*x1_b2*x2_b2/(c_12*((c_12/c_1)**self.s_1*x2_b2+(c_13/\
-        c_1)**self.s_1*(-x2_b2-x1_b2+1)+x1_b2)),-(c_21/c_2)**self.s_2*x1_b2*x2_b2/\
-        (c_21*(x2_b2+(c_23/c_2)**self.s_2*(-x2_b2-x1_b2+1)+(c_21/c_2)**self.s_2*\
-        x1_b2)),-(c_13/c_1)**self.s_1*x1_b2*(-x2_b2-x1_b2+1)/(c_13*((c_12/c_1\
-        )**self.s_1*x2_b2+(c_13/c_1)**self.s_1*(-x2_b2-x1_b2+1)+x1_b2)),-(c_31/c_3\
-        )**self.s_3*x1_b2*(-x2_b2-x1_b2+1)/(c_31*((c_32/c_3)**self.s_3*x2_b2-x2_b2\
-        +(c_31/c_3)**self.s_3*x1_b2-x1_b2+1)),-(c_23/c_2)**self.s_2*(-x2_b2-x1_b2\
-        +1)*x2_b2/(c_23*(x2_b2+(c_23/c_2)**self.s_2*(-x2_b2-x1_b2+1)+(c_21\
-        /c_2)**self.s_2*x1_b2)),-(c_32/c_3)**self.s_3*(-x2_b2-x1_b2+1)*x2_b2/(c_32\
-        *((c_32/c_3)**self.s_3*x2_b2-x2_b2+(c_31/c_3)**self.s_3*x1_b2-x1_b2+1)),\
-        0,0,0,-x1_b2,-x2_b2,-1]
-
-        Row5 = [(c_12/c_1)**self.s_1*(1-(c_13/c_1)**self.s_1)*x1_a1*x2_a1/(c_12*((c_12/c_1)**self.s_1\
-        *x2_a1+(c_13/c_1)**self.s_1*(-x2_a1-x1_a1+1)+x1_a1)**2)-(c_12/\
-        c_1)**self.s_1*x2_a1/(c_12*((c_12/c_1)**self.s_1*x2_a1+(c_13/c_1)**self.s_1*(\
-        -x2_a1-x1_a1+1)+x1_a1)),(c_21/c_2)**self.s_2*((c_21/c_2)**self.s_2-(c_23/c_2\
-        )**self.s_2)*x1_a1*x2_a1/(c_21*(x2_a1+(c_23/c_2)**self.s_2*(-x2_a1-x1_a1\
-        +1)+(c_21/c_2)**self.s_2*x1_a1)**2)-(c_21/c_2)**self.s_2*x2_a1/(c_21*(\
-        x2_a1+(c_23/c_2)**self.s_2*(-x2_a1-x1_a1+1)+(c_21/c_2)**self.s_2*x1_a1)),-(\
-        c_13/c_1)**self.s_1*(-x2_a1-x1_a1+1)/(c_13*((c_12/c_1)**self.s_1*x2_a1+(\
-        c_13/c_1)**self.s_1*(-x2_a1-x1_a1+1)+x1_a1))+(c_13/c_1)**self.s_1*x1_a1/(\
-        c_13*((c_12/c_1)**self.s_1*x2_a1+(c_13/c_1)**self.s_1*(-x2_a1-x1_a1+1)+x1_a1\
-        ))+(c_13/c_1)**self.s_1*(1-(c_13/c_1)**self.s_1)*x1_a1*(-x2_a1-x1_a1+1)/\
-        (c_13*((c_12/c_1)**self.s_1*x2_a1+(c_13/c_1)**self.s_1*(-x2_a1-x1_a1+1)+\
-        x1_a1)**2),-(c_31/c_3)**self.s_3*(-x2_a1-x1_a1+1)/(c_31*((c_32/c_3)**self.s_3\
-        *x2_a1-x2_a1+(c_31/c_3)**self.s_3*x1_a1-x1_a1+1))+(c_31/c_3)**self.s_3\
-        *x1_a1/(c_31*((c_32/c_3)**self.s_3*x2_a1-x2_a1+(c_31/c_3)**self.s_3*x1_a1\
-        -x1_a1+1))+(c_31/c_3)**self.s_3*((c_31/c_3)**self.s_3-1)*x1_a1*(-x2_a1-\
-        x1_a1+1)/(c_31*((c_32/c_3)**self.s_3*x2_a1-x2_a1+(c_31/c_3)**self.s_3*x1_a1\
-        -x1_a1+1)**2),(c_23/c_2)**self.s_2*x2_a1/(c_23*(x2_a1+(c_23/c_2)**self.s_2\
-        *(-x2_a1-x1_a1+1)+(c_21/c_2)**self.s_2*x1_a1))+(c_23/c_2)**self.s_2*((c_21\
-        /c_2)**self.s_2-(c_23/c_2)**self.s_2)*(-x2_a1-x1_a1+1)*x2_a1/(c_23*(x2_a1\
-        +(c_23/c_2)**self.s_2*(-x2_a1-x1_a1+1)+(c_21/c_2)**self.s_2*x1_a1)**2),\
-        (c_32/c_3)**self.s_3*x2_a1/(c_32*((c_32/c_3)**self.s_3*x2_a1-x2_a1+(c_31/\
-        c_3)**self.s_3*x1_a1-x1_a1+1))+((c_31/c_3)**self.s_3-1)*(c_32/c_3)**self.s_3*(\
-        -x2_a1-x1_a1+1)*x2_a1/(c_32*((c_32/c_3)**self.s_3*x2_a1-x2_a1+(c_31/\
-        c_3)**self.s_3*x1_a1-x1_a1+1)**2),-1,0,0,0,0,0]
-
-        Row6 = [(c_12/c_1)**self.s_1*(1-(c_13/c_1)**self.s_1)*x1_b1*x2_b1/(c_12*((c_12/c_1)**self.s_1\
-        *x2_b1+(c_13/c_1)**self.s_1*(-x2_b1-x1_b1+1)+x1_b1)**2)-(c_12/\
-        c1)**self.s_1*x2_b1/(c_12*((c_12/c_1)**self.s_1*x2_b1+(c_13/c_1)**self.s_1*(\
-        -x2_b1-x1_b1+1)+x1_b1)),(c_21/c_2)**self.s_2*((c_21/c_2)**self.s_2-(c_23/\
-        c_2)**self.s_2)*x1_b1*x2_b1/(c_21*(x2_b1+(c_23/c_2)**self.s_2*(-x2_b1-x1_b1\
-        +1)+(c_21/c_2)**self.s_2*x1_b1)**2)-(c_21/c_2)**self.s_2*x2_b1/(c_21*(\
-        x2_b1+(c_23/c_2)**self.s_2*(-x2_b1-x1_b1+1)+(c_21/c_2)**self.s_2*x1_b1)),-(\
-        c_13/c_1)**self.s_1*(-x2_b1-x1_b1+1)/(c_13*((c_12/c_1)**self.s_1*x2_b1+(c_13\
-        /c_1)**self.s_1*(-x2_b1-x1_b1+1)+x1_b1))+(c_13/c_1)**self.s_1*x1_b1/(c_13\
-        *((c_12/c_1)**self.s_1*x2_b1+(c_13/c_1)**self.s_1*(-x2_b1-x1_b1+1)+x1_b1\
-        ))+(c_13/c_1)**self.s_1*(1-(c_13/c_1)**self.s_1)*x1_b1*(-x2_b1-x1_b1+1)/\
-        (c_13*((c_12/c_1)**self.s_1*x2_b1+(c_13/c_1)**self.s_1*(-x2_b1-x1_b1+1)+\
-        x1_b1)**2),-(c_31/c_3)**self.s_3*(-x2_b1-x1_b1+1)/(c_31*((c_32/c_3)**self.s_3\
-        *x2_b1-x2_b1+(c_31/c_3)**self.s_3*x1_b1-x1_b1+1))+(c_31/c_3)**self.s_3\
-        *x1_b1/(c_31*((c_32/c_3)**self.s_3*x2_b1-x2_b1+(c_31/c_3)**self.s_3*x1_b1\
-        -x1_b1+1))+(c_31/c_3)**self.s_3*((c_31/c_3)**self.s_3-1)*x1_b1*(-x2_b1-\
-        x1_b1+1)/(c_31*((c_32/c_3)**self.s_3*x2_b1-x2_b1+(c_31/c_3)**self.s_3*x1_b1\
-        -x1_b1+1)**2),(c_23/c_2)**self.s_2*x2_b1/(c_23*(x2_b1+(c_23/c_2)**self.s_2\
-        *(-x2_b1-x1_b1+1)+(c_21/c_2)**self.s_2*x1_b1))+(c_23/c_2)**self.s_2*((c_21\
-        /c_2)**self.s_2-(c_23/c_2)**self.s_2)*(-x2_b1-x1_b1+1)*x2_b1/(c_23*(x2_b1\
-        +(c_23/c_2)**self.s_2*(-x2_b1-x1_b1+1)+(c_21/c_2)**self.s_2*x1_b1)**2),\
-        (c_32/c_3)**self.s_3*x2_b1/(c_32*((c_32/c_3)**self.s_3*x2_b1-x2_b1+(c_31/\
-        c_3)**self.s_3*x1_b1-x1_b1+1))+((c_31/c_3)**self.s_3-1)*(c_32/c_3)**self.s_3*(\
-        -x2_b1-x1_b1+1)*x2_b1/(c_32*((c_32/c_3)**self.s_3*x2_b1-x2_b1+(c_31/\
-        c_3)**self.s_3*x1_b1-x1_b1+1)**2),-1,0,0,0,0,0]
-
-        Row7 = [(c_12/c_1)**self.s_1*(1-(c_13/c_1)**self.s_1)*x1_a2*x2_a2/(c_12*((c_12/c_1)**self.s_1\
-        *x2_a2+(c_13/c_1)**self.s_1*(-x2_a2-x1_a2+1)+x1_a2)**2)-(c_12/c_1\
-        )**self.s_1*x2_a2/(c_12*((c_12/c_1)**self.s_1*x2_a2+(c_13/c_1)**self.s_1*(\
-        -x2_a2-x1_a2+1)+x1_a2)),(c_21/c_2)**self.s_2*((c_21/c_2)**self.s_2-(c_23/c_2\
-        )**self.s_2)*x1_a2*x2_a2/(c_21*(x2_a2+(c_23/c_2)**self.s_2*(-x2_a2-x1_a2\
-        +1)+(c_21/c_2)**self.s_2*x1_a2)**2)-(c_21/c_2)**self.s_2*x2_a2/(c_21*(x2_a2\
-        +(c_23/c_2)**self.s_2*(-x2_a2-x1_a2+1)+(c_21/c_2)**self.s_2*x1_a2)),-(\
-        c_13/c_1)**self.s_1*(-x2_a2-x1_a2+1)/(c_13*((c_12/c_1)**self.s_1*x2_a2+(c_13\
-        /c_1)**self.s_1*(-x2_a2-x1_a2+1)+x1_a2))+(c_13/c_1)**self.s_1*x1_a2/(c_13\
-        *((c_12/c_1)**self.s_1*x2_a2+(c_13/c_1)**self.s_1*(-x2_a2-x1_a2+1)+x1_a2\
-        ))+(c_13/c_1)**self.s_1*(1-(c_13/c_1)**self.s_1)*x1_a2*(-x2_a2-x1_a2+1)/\
-        (c_13*((c_12/c_1)**self.s_1*x2_a2+(c_13/c_1)**self.s_1*(-x2_a2-x1_a2+1)+\
-        x1_a2)**2),-(c_31/c_3)**self.s_3*(-x2_a2-x1_a2+1)/(c_31*((c_32/c_3)**self.s_3\
-        *x2_a2-x2_a2+(c_31/c_3)**self.s_3*x1_a2-x1_a2+1))+(c_31/c_3)**self.s_3\
-        *x1_a2/(c_31*((c_32/c_3)**self.s_3*x2_a2-x2_a2+(c_31/c_3)**self.s_3*x1_a2\
-        -x1_a2+1))+(c_31/c_3)**self.s_3*((c_31/c_3)**self.s_3-1)*x1_a2*(-x2_a2-\
-        x1_a2+1)/(c_31*((c_32/c_3)**self.s_3*x2_a2-x2_a2+(c_31/c_3)**self.s_3*x1_a2\
-        -x1_a2+1)**2),(c_23/c_2)**self.s_2*x2_a2/(c_23*(x2_a2+(c_23/c_2)**self.s_2\
-        *(-x2_a2-x1_a2+1)+(c_21/c_2)**self.s_2*x1_a2))+(c_23/c_2)**self.s_2*((c_21\
-        /c_2)**self.s_2-(c_23/c_2)**self.s_2)*(-x2_a2-x1_a2+1)*x2_a2/(c_23*(x2_a2\
-        +(c_23/c_2)**self.s_2*(-x2_a2-x1_a2+1)+(c_21/c_2)**self.s_2*x1_a2)**2),\
-        (c_32/c_3)**self.s_3*x2_a2/(c_32*((c_32/c_3)**self.s_3*x2_a2-x2_a2+(c_31/\
-        c_3)**self.s_3*x1_a2-x1_a2+1))+((c_31/c_3)**self.s_3-1)*(c_32/c_3)**self.s_3*(\
-        -x2_a2-x1_a2+1)*x2_a2/(c_32*((c_32/c_3)**self.s_3*x2_a2-x2_a2+(c_31/\
-        c_3)**self.s_3*x1_a2-x1_a2+1)**2),0,0,0,-1,0,0]
-
-        Row8 = [(c_12/c_1)**self.s_1*(1-(c_13/c_1)**self.s_1)*x1_b2*x2_b2/(c_12*((c_12/c_1)**self.s_1\
-        *x2_b2+(c_13/c_1)**self.s_1*(-x2_b2-x1_b2+1)+x1_b2)**2)-(c_12/\
-        c_1)**self.s_1*x2_b2/(c_12*((c_12/c_1)**self.s_1*x2_b2+(c_13/c_1)**self.s_1*(\
-        -x2_b2-x1_b2+1)+x1_b2)),(c_21/c_2)**self.s_2*((c_21/c_2)**self.s_2-(c_23/c_2\
-        )**self.s_2)*x1_b2*x2_b2/(c_21*(x2_b2+(c_23/c_2)**self.s_2*(-x2_b2-x1_b2\
-        +1)+(c_21/c_2)**self.s_2*x1_b2)**2)-(c_21/c_2)**self.s_2*x2_b2/(c_21*(x2_b2\
-        +(c_23/c_2)**self.s_2*(-x2_b2-x1_b2+1)+(c_21/c_2)**self.s_2*x1_b2)),-(c_13\
-        /c_1)**self.s_1*(-x2_b2-x1_b2+1)/(c_13*((c_12/c_1)**self.s_1*x2_b2+(c_13\
-        /c_1)**self.s_1*(-x2_b2-x1_b2+1)+x1_b2))+(c_13/c_1)**self.s_1*x1_b2/(c_13\
-        *((c_12/c_1)**self.s_1*x2_b2+(c_13/c_1)**self.s_1*(-x2_b2-x1_b2+1)+x1_b2\
-        ))+(c_13/c_1)**self.s_1*(1-(c_13/c_1)**self.s_1)*x1_b2*(-x2_b2-x1_b2+1)/\
-        (c_13*((c_12/c_1)**self.s_1*x2_b2+(c_13/c_1)**self.s_1*(-x2_b2-x1_b2+1)+\
-        x1_b2)**2),-(c_31/c_3)**self.s_3*(-x2_b2-x1_b2+1)/(c_31*((c_32/c_3)**self.s_3\
-        *x2_b2-x2_b2+(c_31/c_3)**self.s_3*x1_b2-x1_b2+1))+(c_31/c_3)**self.s_3\
-        *x1_b2/(c_31*((c_32/c_3)**self.s_3*x2_b2-x2_b2+(c_31/c_3)**self.s_3*x1_b2\
-        -x1_b2+1))+(c_31/c_3)**self.s_3*((c_31/c_3)**self.s_3-1)*x1_b2*(-x2_b2-x1_b2\
-        +1)/(c_31*((c_32/c_3)**self.s_3*x2_b2-x2_b2+(c_31/c_3)**self.s_3*x1_b2\
-        -x1_b2+1)**2),(c_23/c_2)**self.s_2*x2_b2/(c_23*(x2_b2+(c_23/c_2)**self.s_2\
-        *(-x2_b2-x1_b2+1)+(c_21/c_2)**self.s_2*x1_b2))+(c_23/c_2)**self.s_2*((c_21\
-        /c_2)**self.s_2-(c_23/c_2)**self.s_2)*(-x2_b2-x1_b2+1)*x2_b2/(c_23*(x2_b2\
-        +(c_23/c_2)**self.s_2*(-x2_b2-x1_b2+1)+(c_21/c_2)**self.s_2*x1_b2)**2),\
-        (c_32/c_3)**self.s_3*x2_b2/(c_32*((c_32/c_3)**self.s_3*x2_b2-x2_b2+(c_31/\
-        c_3)**self.s_3*x1_b2-x1_b2+1))+((c_31/c_3)**self.s_3-1)*(c_32/c_3)**self.s_3*(\
-        -x2_b2-x1_b2+1)*x2_b2/(c_32*((c_32/c_3)**self.s_3*x2_b2-x2_b2+(c_31/\
-        c_3)**self.s_3*x1_b2-x1_b2+1)**2),0,0,0,-1,0,0]
-
-        Row9 =  [(c_12/c_1)**self.s_1*((c_12/c_1)**self.s_1-(c_13/c_1)**self.s_1)*x1_a1*x2_a1/(c_12\
-        *((c_12/c_1)**self.s_1*x2_a1+(c_13/c_1)**self.s_1*(-x2_a1-x1_a1+1)+x1_a1\
-        )**2)-(c_12/c_1)**self.s_1*x1_a1/(c_12*((c_12/c_1)**self.s_1*x2_a1+(c_13\
-        /c_1)**self.s_1*(-x2_a1-x1_a1+1)+x1_a1)),(c_21/c_2)**self.s_2*(1-(c_23/c_2\
-        )**self.s_2)*x1_a1*x2_a1/(c_21*(x2_a1+(c_23/c_2)**self.s_2*(-x2_a1-x1_a1\
-        +1)+(c_21/c_2)**self.s_2*x1_a1)**2)-(c_21/c_2)**self.s_2*x1_a1/(c_21*(\
-        x2_a1+(c_23/c_2)**self.s_2*(-x2_a1-x1_a1+1)+(c_21/c_2)**self.s_2*x1_a1)),(\
-        c_13/c_1)**self.s_1*x1_a1/(c_13*((c_12/c_1)**self.s_1*x2_a1+(c_13/c_1)**self.s_1\
-        *(-x2_a1-x1_a1+1)+x1_a1))+(c_13/c_1)**self.s_1*((c_12/c_1)**self.s_1-(c_13\
-        /c_1)**self.s_1)*x1_a1*(-x2_a1-x1_a1+1)/(c_13*((c_12/c_1)**self.s_1*x2_a1\
-        +(c_13/c_1)**self.s_1*(-x2_a1-x1_a1+1)+x1_a1)**2),(c_31/c_3)**self.s_3*\
-        x1_a1/(c_31*((c_32/c_3)**self.s_3*x2_a1-x2_a1+(c_31/c_3)**self.s_3*x1_a1-\
-        x1_a1+1))+(c_31/c_3)**self.s_3*((c_32/c_3)**self.s_3-1)*x1_a1*(-x2_a1-x1_a1\
-        +1)/(c_31*((c_32/c_3)**self.s_3*x2_a1-x2_a1+(c_31/c_3)**self.s_3*x1_a1-\
-        x1_a1+1)**2),(c_23/c_2)**self.s_2*x2_a1/(c_23*(x2_a1+(c_23/c_2)**self.s_2*\
-        (-x2_a1-x1_a1+1)+(c_21/c_2)**self.s_2*x1_a1))-(c_23/c_2)**self.s_2*(-x2_a1\
-        -x1_a1+1)/(c_23*(x2_a1+(c_23/c_2)**self.s_2*(-x2_a1-x1_a1+1)+(c_21/\
-        c_2)**self.s_2*x1_a1))+(c_23/c_2)**self.s_2*(1-(c_23/c_2)**self.s_2)*(-x2_a1-\
-        x1_a1+1)*x2_a1/(c_23*(x2_a1+(c_23/c_2)**self.s_2*(-x2_a1-x1_a1+1)+(c_21\
-        /c_2)**self.s_2*x1_a1)**2),(c_32/c_3)**self.s_3*x2_a1/(c_32*((c_32/c_3)**self.s_3\
-        *x2_a1-x2_a1+(c_31/c_3)**self.s_3*x1_a1-x1_a1+1))-(c_32/c_3)**self.s_3\
-        *(-x2_a1-x1_a1+1)/(c_32*((c_32/c_3)**self.s_3*x2_a1-x2_a1+(c_31/c_3\
-        )**self.s_3*x1_a1-x1_a1+1))+(c_32/c_3)**self.s_3*((c_32/c_3)**self.s_3-1)*(-\
-        x2_a1-x1_a1+1)*x2_a1/(c_32*((c_32/c_3)**self.s_3*x2_a1-x2_a1+(c_31/c_3\
-        )**self.s_3*x1_a1-x1_a1+1)**2),0,-1,0,0,0,0]
-
-        Row10 = [(c_12/c_1)**self.s_1*((c_12/c_1)**self.s_1-(c_13/c_1)**self.s_1)*x1_b1*x2_b1/(c_12\
-        *((c_12/c_1)**self.s_1*x2_b1+(c_13/c_1)**self.s_1*(-x2_b1-x1_b1+1)+x1_b1\
-        )**2)-(c_12/c_1)**self.s_1*x1_b1/(c_12*((c_12/c_1)**self.s_1*x2_b1+(c_13\
-        /c_1)**self.s_1*(-x2_b1-x1_b1+1)+x1_b1)),(c_21/c_2)**self.s_2*(1-(c_23/c_2\
-        )**self.s_2)*x1_b1*x2_b1/(c_21*(x2_b1+(c_23/c_2)**self.s_2*(-x2_b1-x1_b1\
-        +1)+(c_21/c_2)**self.s_2*x1_b1)**2)-(c_21/c_2)**self.s_2*x1_b1/(c_21*(\
-        x2_b1+(c_23/c_2)**self.s_2*(-x2_b1-x1_b1+1)+(c_21/c_2)**self.s_2*x1_b1)),(c_13\
-        /c_1)**self.s_1*x1_b1/(c_13*((c_12/c_1)**self.s_1*x2_b1+(c_13/c_1)**self.s_1\
-        *(-x2_b1-x1_b1+1)+x1_b1))+(c_13/c_1)**self.s_1*((c_12/c_1)**self.s_1-(c_13\
-        /c_1)**self.s_1)*x1_b1*(-x2_b1-x1_b1+1)/(c_13*((c_12/c_1)**self.s_1*x2_b1\
-        +(c_13/c_1)**self.s_1*(-x2_b1-x1_b1+1)+x1_b1)**2),(c_31/c_3)**self.s_3*\
-        x1_b1/(c_31*((c_32/c_3)**self.s_3*x2_b1-x2_b1+(c_31/c_3)**self.s_3*x1_b1-\
-        x1_b1+1))+(c_31/c_3)**self.s_3*((c_32/c_3)**self.s_3-1)*x1_b1*(-x2_b1-x1_b1\
-        +1)/(c_31*((c_32/c_3)**self.s_3*x2_b1-x2_b1+(c_31/c_3)**self.s_3*x1_b1-\
-        x1_b1+1)**2),(c_23/c_2)**self.s_2*x2_b1/(c_23*(x2_b1+(c_23/c_2)**self.s_2*\
-        (-x2_b1-x1_b1+1)+(c_21/c_2)**self.s_2*x1_b1))-(c_23/c_2)**self.s_2*(-x2_b1\
-        -x1_b1+1)/(c_23*(x2_b1+(c_23/c_2)**self.s_2*(-x2_b1-x1_b1+1)+(c_21/\
-        c_2)**self.s_2*x1_b1))+(c_23/c_2)**self.s_2*(1-(c_23/c_2)**self.s_2)*(-x2_b1-\
-        x1_b1+1)*x2_b1/(c_23*(x2_b1+(c_23/c_2)**self.s_2*(-x2_b1-x1_b1+1)+(c_21\
-        /c_2)**self.s_2*x1_b1)**2),(c_32/c_3)**self.s_3*x2_b1/(c_32*((c_32/c_3)**self.s_3\
-        *x2_b1-x2_b1+(c_31/c_3)**self.s_3*x1_b1-x1_b1+1))-(c_32/c_3)**self.s_3\
-        *(-x2_b1-x1_b1+1)/(c_32*((c_32/c_3)**self.s_3*x2_b1-x2_b1+(c_31/c_3\
-        )**self.s_3*x1_b1-x1_b1+1))+(c_32/c_3)**self.s_3*((c_32/c_3)**self.s_3-1)*(\
-        -x2_b1-x1_b1+1)*x2_b1/(c_32*((c_32/c_3)**self.s_3*x2_b1-x2_b1+(c_31/c_3\
-        )**self.s_3*x1_b1-x1_b1+1)**2),0,-1,0,0,0,0]
-
-        Row11 = [(c_12/c_1)**self.s_1*((c_12/c_1)**self.s_1-(c_13/c_1)**self.s_1)*x1_a2*x2_a2/(c_12\
-        *((c_12/c_1)**self.s_1*x2_a2+(c_13/c_1)**self.s_1*(-x2_a2-x1_a2+1)+x1_a2\
-        )**2)-(c_12/c_1)**self.s_1*x1_a2/(c_12*((c_12/c_1)**self.s_1*x2_a2+(c_13\
-        /c_1)**self.s_1*(-x2_a2-x1_a2+1)+x1_a2)),(c_21/c_2)**self.s_2*(1-(c_23/c_2\
-        )**self.s_2)*x1_a2*x2_a2/(c_21*(x2_a2+(c_23/c_2)**self.s_2*(-x2_a2-x1_a2\
-        +1)+(c_21/c_2)**self.s_2*x1_a2)**2)-(c_21/c_2)**self.s_2*x1_a2/(c_21*(x2_a2\
-        +(c_23/c_2)**self.s_2*(-x2_a2-x1_a2+1)+(c_21/c_2)**self.s_2*x1_a2)),(c_13\
-        /c_1)**self.s_1*x1_a2/(c_13*((c_12/c_1)**self.s_1*x2_a2+(c_13/c_1)**self.s_1\
-        *(-x2_a2-x1_a2+1)+x1_a2))+(c_13/c_1)**self.s_1*((c_12/c_1)**self.s_1-(c_13\
-        /c_1)**self.s_1)*x1_a2*(-x2_a2-x1_a2+1)/(c_13*((c_12/c_1)**self.s_1*x2_a2\
-        +(c_13/c_1)**self.s_1*(-x2_a2-x1_a2+1)+x1_a2)**2),(c_31/c_3)**self.s_3*\
-        x1_a2/(c_31*((c_32/c_3)**self.s_3*x2_a2-x2_a2+(c_31/c_3)**self.s_3*x1_a2-\
-        x1_a2+1))+(c_31/c_3)**self.s_3*((c_32/c_3)**self.s_3-1)*x1_a2*(-x2_a2-x1_a2\
-        +1)/(c_31*((c_32/c_3)**self.s_3*x2_a2-x2_a2+(c_31/c_3)**self.s_3*x1_a2-\
-        x1_a2+1)**2),(c_23/c_2)**self.s_2*x2_a2/(c_23*(x2_a2+(c_23/c_2)**self.s_2*\
-        (-x2_a2-x1_a2+1)+(c_21/c_2)**self.s_2*x1_a2))-(c_23/c_2)**self.s_2*(-x2_a2\
-        -x1_a2+1)/(c_23*(x2_a2+(c_23/c_2)**self.s_2*(-x2_a2-x1_a2+1)+(c_21/\
-        c_2)**self.s_2*x1_a2))+(c_23/c_2)**self.s_2*(1-(c_23/c_2)**self.s_2)*(-x2_a2-\
-        x1_a2+1)*x2_a2/(c_23*(x2_a2+(c_23/c_2)**self.s_2*(-x2_a2-x1_a2+1)+(c_21\
-        /c_2)**self.s_2*x1_a2)**2),(c_32/c_3)**self.s_3*x2_a2/(c_32*((c_32/c_3)**self.s_3\
-        *x2_a2-x2_a2+(c_31/c_3)**self.s_3*x1_a2-x1_a2+1))-(c_32/c_3)**self.s_3\
-        *(-x2_a2-x1_a2+1)/(c_32*((c_32/c_3)**self.s_3*x2_a2-x2_a2+(c_31/c_3\
-        )**self.s_3*x1_a2-x1_a2+1))+(c_32/c_3)**self.s_3*((c_32/c_3)**self.s_3-1)*(\
-        -x2_a2-x1_a2+1)*x2_a2/(c_32*((c_32/c_3)**self.s_3*x2_a2-x2_a2+(c_31/c_3\
-        )**self.s_3*x1_a2-x1_a2+1)**2),0,0,0,0,-1,0]
-
-        Row12 = [(c_12/c_1)**self.s_1*((c_12/c_1)**self.s_1-(c_13/c_1)**self.s_1)*x1_b2*x2_b2/(c_12\
-        *((c_12/c_1)**self.s_1*x2_b2+(c_13/c_1)**self.s_1*(-x2_b2-x1_b2+1)+x1_b2\
-        )**2)-(c_12/c_1)**self.s_1*x1_b2/(c_12*((c_12/c_1)**self.s_1*x2_b2+(c_13\
-        /c_1)**self.s_1*(-x2_b2-x1_b2+1)+x1_b2)),(c_21/c_2)**self.s_2*(1-(c_23/c_2\
-        )**self.s_2)*x1_b2*x2_b2/(c_21*(x2_b2+(c_23/c_2)**self.s_2*(-x2_b2-x1_b2\
-        +1)+(c_21/c_2)**self.s_2*x1_b2)**2)-(c_21/c_2)**self.s_2*x1_b2/(c_21*(x2_b2\
-        +(c_23/c_2)**self.s_2*(-x2_b2-x1_b2+1)+(c_21/c_2)**self.s_2*x1_b2)),(c_13\
-        /c_1)**self.s_1*x1_b2/(c_13*((c_12/c_1)**self.s_1*x2_b2+(c_13/c_1)**self.s_1\
-        *(-x2_b2-x1_b2+1)+x1_b2))+(c_13/c_1)**self.s_1*((c_12/c_1)**self.s_1-(c_13\
-        /c_1)**self.s_1)*x1_b2*(-x2_b2-x1_b2+1)/(c_13*((c_12/c_1)**self.s_1*x2_b2\
-        +(c_13/c_1)**self.s_1*(-x2_b2-x1_b2+1)+x1_b2)**2),(c_31/c_3)**self.s_3*\
-        x1_b2/(c_31*((c_32/c_3)**self.s_3*x2_b2-x2_b2+(c_31/c_3)**self.s_3*x1_b2-\
-        x1_b2+1))+(c_31/c_3)**self.s_3*((c_32/c_3)**self.s_3-1)*x1_b2*(-x2_b2-x1_b2\
-        +1)/(c_31*((c_32/c_3)**self.s_3*x2_b2-x2_b2+(c_31/c_3)**self.s_3*x1_b2-\
-        x1_b2+1)**2),(c_23/c_2)**self.s_2*x2_b2/(c_23*(x2_b2+(c_23/c_2)**self.s_2*\
-        (-x2_b2-x1_b2+1)+(c_21/c_2)**self.s_2*x1_b2))-(c_23/c_2)**self.s_2*(-x2_b2\
-        -x1_b2+1)/(c_23*(x2_b2+(c_23/c_2)**self.s_2*(-x2_b2-x1_b2+1)+(c_21/\
-        c_2)**self.s_2*x1_b2))+(c_23/c_2)**self.s_2*(1-(c_23/c_2)**self.s_2)*(-x2_b2-\
-        x1_b2+1)*x2_b2/(c_23*(x2_b2+(c_23/c_2)**self.s_2*(-x2_b2-x1_b2+1)+(c_21\
-        /c_2)**self.s_2*x1_b2)**2),(c_32/c_3)**self.s_3*x2_b2/(c_32*((c_32/c_3)**self.s_3\
-        *x2_b2-x2_b2+(c_31/c_3)**self.s_3*x1_b2-x1_b2+1))-(c_32/c_3)**self.s_3\
-        *(-x2_b2-x1_b2+1)/(c_32*((c_32/c_3)**self.s_3*x2_b2-x2_b2+(c_31/c_3
-        )**self.s_3*x1_b2-x1_b2+1))+(c_32/c_3)**self.s_3*((c_32/c_3)**self.s_3-1)*(\
-        -x2_b2-x1_b2+1)*x2_b2/(c_32*((c_32/c_3)**self.s_3*x2_b2-x2_b2+(c_31/c_3\
-        )**self.s_3*x1_b2-x1_b2+1)**2),0,0,0,0,-1,0]               
-
-        return array([Row1, Row2, Row3, Row4, Row5, Row6, Row7, Row8, Row9, Row10, Row11, Row12])
-
+    
+    
+    
